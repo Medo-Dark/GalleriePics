@@ -60,19 +60,20 @@ const deleteImage = async (req, res) => {
 const ImgDetails = async (req, res) => {
   try {
     const { imageId } = req.params;
-    const { dominant,Histogram ,moment } = req.body;
+    const { dominant,Histogram ,moment ,tamura ,gabor } = req.body;
 
     const image = await Image.findById(imageId);
     image.dominant=dominant;
     image.Histogram=Histogram;
     image.moment=moment;
-    console.log(image.moment)
-    const updated = await Image.findByIdAndUpdate(imageId,
-        {dominant:image.dominant,Histogram:image.Histogram,moment:image.moment})
+    image.tamura = tamura;
+    image.gabor= gabor;
+    let updated = await Image.findByIdAndUpdate(imageId,
+        {dominant:image.dominant,Histogram:image.Histogram,moment:image.moment,tamura:image.tamura,gabor:image.gabor})
     if (!updated) {
       return res.status(404).json({ message: 'Image entry not found' });
     }
-    res.json(updated);
+    res.json("updated");
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

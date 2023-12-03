@@ -30,7 +30,14 @@ const ImageSchema = new mongoose.Schema({
     l_mean:{},l_std:{},l_skew:{} , l_kurtosis:{} ,
     a_mean:{}, a_std:{}, a_skew:{} , a_kurtosis:{} ,
     b_mean: {}, b_std:{} , b_skew:{}, b_kurtosis:{}
-  }
+  },
+  tamura:{
+    contrast :{},
+    coarseness:{},
+    regularity:{},
+    roughness:{}
+  },
+  gabor:[]
 });
 
 const Image = mongoose.model('Image', ImageSchema);
