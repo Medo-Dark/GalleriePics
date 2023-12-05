@@ -15,19 +15,24 @@ const getSimilarityByUser = async (req, res) => {
 const EditSimilarity = async (req, res) => {
   try {
     const { imageId } = req.params;
-    const { Set } = req.body;
-    const similar = await Similarity.find({"imageId": imageId});
-
-    Set.forEach((element, index) => {
+    const { SimSet } = req.body;
+    const similar = await Similarity.findOne({"ImageId": imageId});
+    SimSet.forEach((element, index) => {
       similar.SimilarSet[index].distance = element.distance
+
     })
     let sim = similar.SimilarSet.sort((a, b) => a.distance - b.distance);
+
+    sim.forEach((obj)=>{
+      console.log(obj.distance)
+    })
+
 
     const updated = await Similarity.findByIdAndUpdate(similar._id, {"SimilarSet":sim})
     if (!updated) {
       return res.status(404).json({ message: 'Similarity entry not found' });
     }
-    res.json(updated);
+    res.json(sim.slice(0,SimSet.length));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
