@@ -215,7 +215,6 @@ def calculate_similarity(imgId,userId):
     img = collection.find_one({'_id': ObjectId(imgId)})
     AllUserImg= list(collection.find({'userId': ObjectId(userId)}))
 
-
     # Extract query features
     query_features = {
         'tamura_texture': list(img["tamura"].values()),
@@ -247,10 +246,10 @@ def calculate_similarity(imgId,userId):
         color_distancesCM = calculate_distance(query_features['color_moments'], database_features['color_moments'][i])
         color_distancesCD = calculate_distance2(query_features['color_domaine'], database_features['color_domaine'][i])
 
-        combined_global_distance = 0.5 * np.mean(texture_distancesT) + 0.5 * np.mean(
-            texture_distancesG) + 0.5 * np.mean(color_distancesCM) + 0.5 * np.mean(color_distancesH) + 0.5 * np.mean(
-            color_distancesCD)
-        global_distances.append({"ImgId":AllUserImg[i]['_id'],"distance":combined_global_distance,"src":AllUserImg[i]['src']})
+        combined_global_distance = np.mean(texture_distancesT)/2 + np.mean(
+            texture_distancesG)/2 + np.mean(color_distancesCM)/3 + np.mean(color_distancesH)/3 + np.mean(
+            color_distancesCD)/3
+        global_distances.append({"ImgId" : AllUserImg[i]['_id'],"distance":combined_global_distance,"src":AllUserImg[i]['src']})
 
     # Sort images based on similarity scores (smaller distance is more similar)
     sortedimg = sorted(global_distances, key=lambda x: x['distance'])
@@ -262,7 +261,7 @@ def calculate_similarity(imgId,userId):
         return f'Error: {str(e)}'
 
     # Return the IDs of the top 2 similar images
-    data = sortedimg[:2]
+    data = sortedimg[1:5]
     serialized_result = json.loads(json_util.dumps(data))
 
     return serialized_result
