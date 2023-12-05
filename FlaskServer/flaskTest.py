@@ -7,7 +7,8 @@ import cv2
 from flask_cors import CORS
 from pymongo import MongoClient
 from sklearn.cluster import KMeans
-from bson import ObjectId
+from bson import ObjectId, json_util
+import json
 
 
 app = Flask(__name__)
@@ -180,11 +181,9 @@ def calculate_distance(feature_query, feature_database):
     distances = []
 
     for i in range(len(feature_query)):
-        calc = (feature_query[i] - feature_database[i]) ** 2
+        calc = (float(feature_query[i]) - float(feature_database[i])) ** 2
         distances.append(calc ** 0.5)
 
-    # print(distances)
-    # print("///////////////////////////////////////////////////////////////////////")
 
     return distances
 
@@ -195,42 +194,46 @@ def calculate_distance2(feature_query, feature_database):
     for i in range(len(feature_query)):
         x = 0
         for j in range(len(feature_query[i])):
-            calc = (feature_query[i][j] - feature_database[i][j]) ** 2
+            calc = (float(feature_query[i][j]) - float(feature_database[i][j])) ** 2
             x = x + (calc ** 0.5)
         distances.append(x)
 
-    # print(distances)
-    # print("///////////////////////////////////////////////////////////////////////")
 
     return distances
 
-
-def calculate_similarity(query_image_data, database_image_data):
+@app.route('/similar/<imgId>/<userId>', methods=['GET'])
+def calculate_similarity(imgId,userId):
     db = mongo.get_database('PicsV1')
     collection = db['images']
+    coll = db['similarities']
+
+    sim = coll.find_one({'ImageId':ObjectId(imgId)})
+    if sim :
+        coll.delete_one({'ImageId': ObjectId(imgId)})
 
     # Example: Retrieve data from MongoDB
-    img = collection.find_one({'_id': "img_id"})
-    print(img)
-    AllUserImg= list(collection.find({'userId': "userId"}))
+    img = collection.find_one({'_id': ObjectId(imgId)})
+    AllUserImg= list(collection.find({'userId': ObjectId(userId)}))
 
 
     # Extract query features
     query_features = {
-        'tamura': query_image_data.get('tamura', []),
-        'gabor': query_image_data.get('gabor', []),
-        'histogram': query_image_data.get('histogram', []),
-        'color_moments': query_image_data.get('color_moments', []),
-        'dominant': query_image_data.get('dominant', [])
+        'tamura_texture': list(img["tamura"].values()),
+        'gabor_texture': img["gabor"],
+        'histogram': list(img["Histogram"].values()),
+        'color_moments': list(img["moment"].values()),
+        'color_domaine': img["dominant"]
     }
+
 
     # Extract database features
     database_features = {
-        'tamura': [image_data.get('tamura', []) for image_data in database_image_data],
-        'gabor_texture': [image_data.get('gabor_texture', []) for image_data in database_image_data],
-        'histogram': [image_data.get('histogram', []) for image_data in database_image_data],
-        'color_moments': [image_data.get('color_moments', []) for image_data in database_image_data],
-        'dominant': [image_data.get('dominant', []) for image_data in database_image_data]
+        'tamura_texture': [list(img["tamura"].values()) for img in AllUserImg],
+        'gabor_texture': [img["gabor"] for img in AllUserImg],
+        'histogram': [list(img["Histogram"].values()) for img in AllUserImg],
+        'color_moments': [list(img["moment"].values()) for img in AllUserImg],
+        'color_domaine': [img["dominant"]for img in AllUserImg],
+        'src': [img["src"] for img in AllUserImg]
     }
 
     # Calculate global distance
@@ -247,14 +250,22 @@ def calculate_similarity(query_image_data, database_image_data):
         combined_global_distance = 0.5 * np.mean(texture_distancesT) + 0.5 * np.mean(
             texture_distancesG) + 0.5 * np.mean(color_distancesCM) + 0.5 * np.mean(color_distancesH) + 0.5 * np.mean(
             color_distancesCD)
-        print(combined_global_distance, " for ", database_image_data[i]['image_id'])
-        global_distances.append(combined_global_distance)
+        global_distances.append({"ImgId":AllUserImg[i]['_id'],"distance":combined_global_distance,"src":AllUserImg[i]['src']})
 
     # Sort images based on similarity scores (smaller distance is more similar)
-    similar_images_indices = np.argsort(global_distances)
+    sortedimg = sorted(global_distances, key=lambda x: x['distance'])
+
+    #insert Data into MongoDB
+    try:
+        coll.insert_one({"userId":ObjectId(userId),"ImageId":ObjectId(imgId),"SimilarSet":sortedimg})
+    except Exception as e:
+        return f'Error: {str(e)}'
 
     # Return the IDs of the top 2 similar images
-    return [database_image_data[i]['image_id'] for i in similar_images_indices[:2]]
+    data = sortedimg[:2]
+    serialized_result = json.loads(json_util.dumps(data))
+
+    return serialized_result
 
 
 @app.route('/recherche', methods=['POST'])
