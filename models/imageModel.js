@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const {createImage} = require("../controllers/ImageController");
 
 const ImageSchema = new mongoose.Schema({
   userId: {

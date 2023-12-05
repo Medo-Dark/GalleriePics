@@ -9,6 +9,7 @@ const userRoutes = require('./routes/UserRoutes');
 const GalleryRoutes = require('./routes/galleryRoutes');
 const ImageRoutes = require('./routes/ImageRoutes');
 const ThemeRoutes = require('./routes/ThemeRoutes');
+const SimilarityRoutes = require('./routes/SimilarityRoutes');
 
 
 
@@ -27,6 +28,7 @@ app.use('/users', userRoutes);
 app.use('/gallery', GalleryRoutes);
 app.use('/theme', ThemeRoutes);
 app.use('/image', ImageRoutes);
+app.use('/similar',SimilarityRoutes)
 
 // server
 const port = process.env.PORT;

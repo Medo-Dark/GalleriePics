@@ -69,7 +69,7 @@ const ImgDetails = async (req, res) => {
     image.tamura = tamura;
     image.gabor= gabor;
     let updated = await Image.findByIdAndUpdate(imageId,
-        {dominant:image.dominant,Histogram:image.Histogram,moment:image.moment,tamura:image.tamura,gabor:image.gabor})
+        {"dominant":image.dominant,"Histogram":image.Histogram,"moment":image.moment,"tamura":image.tamura,"gabor":image.gabor})
     if (!updated) {
       return res.status(404).json({ message: 'Image entry not found' });
     }
